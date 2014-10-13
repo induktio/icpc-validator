@@ -13,12 +13,14 @@ Floating point numbers are compared up to an accuracy of 1e-6.
 * <code>./validate.py xyz.o [testdata directory]</code>
 
 The following directory hierarchy is assumed here:
-* validate.py
-* xyz.o
-* testdata/
-** xyz/
-*** input1.in
-*** input1.ans
+<pre><code>. 
+|- validate.py
+|- xyz.o
+|- testdata/
+   |- xyz/
+      |- input1.in
+      |- input1.ans
+</code></pre>
 
 Any directory in 'testdata' with the word 'xyz' in the name will match for a testdata directory, which is then recursively searched for all test inputs.
 
