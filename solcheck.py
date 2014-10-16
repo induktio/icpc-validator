@@ -2,9 +2,10 @@
 
 import os
 import re
+import argparse
 from sys import argv, stderr
-from subprocess import check_output
-from os.path import exists, join
+from subprocess import check_output, CalledProcessError
+from os.path import exists, join as pjoin
 
 def compare(a, b):
     try:
@@ -21,8 +22,12 @@ def compare(a, b):
 def check_problem(program, infile, ansfile):
     wanted = ''.join(open(ansfile, 'r').readlines()).split('\n')
     print 'Testing', infile, wanted[:16][:-1]
-    result = check_output(
-        "%s < %s" % (program, infile), shell=True).split('\n')
+    try:
+        result = check_output(
+            "%s < %s" % (program, infile), shell=True).split('\n')
+    except CalledProcessError as e:
+        print 'FAIL (crashed)'
+        return False
     
     if len(wanted) != len(result):
         print 'FAIL', result[:16][:-1]
@@ -38,8 +43,17 @@ def check_problem(program, infile, ansfile):
 
 
 if __name__ == "__main__":
-    program = argv[1]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("program", help="executable solution program")
+    parser.add_argument('-t', dest="testdir", default="testdata", \
+        help="test input directory")
+    args = parser.parse_args()
+
+    program = args.program
+    testdir = args.testdir
     assert(exists(program))
+    assert(exists(testdir))
+    
     name = str.lower(re.split('\W+', program)[0])
     if '.py' in program:
         cmdline = 'python '+program
@@ -48,17 +62,15 @@ if __name__ == "__main__":
     else:
         cmdline = './'+program
     
-    testdir = (argv[2] if len(argv)>=3 else 'testdata')
-    
     problemdir = False
     for f in os.listdir(testdir):
-        if name in str.lower(f):
+        if os.path.isdir(pjoin(testdir,f)) and name in str.lower(f):
             problemdir = f
             break
+    assert(problemdir)
     count = 0
     fails = 0
-    problempath = join(testdir, problemdir)
-    assert(problempath)
+    problempath = pjoin(testdir, problemdir)
     
     for dirpath, dirnames, filenames in sorted(os.walk(problempath)):
         for testf in filenames:
@@ -66,7 +78,7 @@ if __name__ == "__main__":
                 
                 answerf = '.'.join(testf.split('.')[:-1]) + '.ans'
                 if not check_problem(
-                cmdline, join(dirpath, testf), join(dirpath, answerf)):
+                cmdline, pjoin(dirpath, testf), pjoin(dirpath, answerf)):
                     fails += 1
                 count += 1
     
